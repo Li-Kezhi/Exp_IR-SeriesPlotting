@@ -6,10 +6,9 @@ FT-IR: Time series plotting
 '''
 
 __author__ = "LI Kezhi" 
-__date__ = "$2016-05-12$"
-__version__ = "0.1"
+__date__ = "$2016-05-14$"
+__version__ = "1.0"
 
-# Existing bugs: When differenceSpectra = True, it seems something goes wrong in the first 2 min
 
 import numpy as np
 import matplotlib.cm as cm
@@ -83,8 +82,8 @@ for i in range(fileNumber + 1):
             break
         else:
             raise IOError
-if differenceSpectra == True:                  # BUG! The first 2 min exists bug?
-    Z[:0] = np.zeros_like(Z[:0])
+if differenceSpectra == True:  
+    Z[:,0] = np.zeros_like(Z[:,0])
 
 if xHighRange == None or xLowRange == None:    # Wavelength/cm^-1
     y_ = x[len(x):0:-1]
@@ -119,7 +118,9 @@ else:
                     extent=[y_[0], y_[-1], x_[-1], x_[0]],
                     vmax=maxIntensity, vmin=minIntensity)
 
-plt.tight_layout()
+#plt.tight_layout()
+plt.xlabel("Wavenumber (cm$^-1$)")
+plt.ylabel("Time (min)")
 
 cb = plt.colorbar()
 cb.set_label('Kubelka-Munk')
