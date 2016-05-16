@@ -84,7 +84,7 @@ for i in range(fileNumber + 1):
         else:
             raise IOError
 
-if differenceSpectra == True:                  # BUG! The first 2 min exists bug?
+if differenceSpectra == True:
     Z[:,0] = np.zeros_like(Z[:,0])
 
 if xHighRange == None or xLowRange == None:    # Wavelength/cm^-1
