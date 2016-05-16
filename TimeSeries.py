@@ -6,9 +6,8 @@ FT-IR: Time series plotting
 '''
 
 __author__ = "LI Kezhi" 
-__date__ = "$2016-05-14$"
-__version__ = "1.0"
-
+__date__ = "$2016-05-16$"
+__version__ = "1.1"
 
 import numpy as np
 import matplotlib.cm as cm
@@ -19,7 +18,7 @@ import matplotlib.pyplot as plt
 
 # Experiment data
 
-position = "E:\\Downloads\\likzIR\\20160510_Mn5Fe5_2\\5 NO\\"
+position = "E:\\Downloads\\likzIR\\20160510_Mn5Fe5_2\\5_NO\\"
 prefix = "series001200"
 fileNumber = 36
 initialTime, endTime = 0.821, 30.178  # Unit: min
@@ -27,7 +26,7 @@ initialTime, endTime = 0.821, 30.178  # Unit: min
 # Plotting parameters
 
 differenceSpectra = True                   # If True, the first spectrum will be used as background
-xHighRange, xLowRange = 1400, 700           # "None" or a float
+xHighRange, xLowRange = 1800, 1000           # "None" or a float
 #xHighRange, xLowRange = None, None
 minIntensity, maxIntensity = -0.015, 0.015  # "None" or a float
 #minIntensity, maxIntensity = None, None
@@ -40,15 +39,16 @@ color_choice = cm.seismic
 # x, y grid
 
 # Step 1: Obtain wavenumber step
-filename = prefix + "%02d" % 0 + ".txt"
+filename = prefix + "%02d" % 0 + ".spa.csv"
 count_x, start_x, end_x = 0, None, None
 for line in open(position + filename, 'r'):
     try:
-        assert line != '\n'
-        if start_x == None:
-            start_x = float(line.split()[0])
-        end_x = float(line.split()[0])
-        count_x += 1
+        if line != '#Converted with spa2csv tool\n':
+            assert line != '\n'
+            if start_x == None:
+                start_x = float(line.split(',')[0])
+            end_x = float(line.split(',')[0])
+            count_x += 1
     except AssertionError:
         break
 deltax = (start_x - end_x) / count_x
@@ -64,16 +64,17 @@ Z = np.zeros([len(x), len(y)])
 county = 0
 for i in range(fileNumber + 1):
     try:
-        filename = prefix + "%02d" % i + ".txt"
+        filename = prefix + "%02d" % i + ".spa.csv"
         countx = 0
         for line in open(position + filename, 'r'):
             try:
-                assert line != '\n'
-                splitting = line.split()
-                Z[countx, county] = float(splitting[1])
-                if differenceSpectra == True and county != 0:
-                    Z[countx, county] -= Z[countx, 0]
-                countx += 1
+                if line != '#Converted with spa2csv tool\n':
+                    assert line != '\n'
+                    splitting = line.split(',')
+                    Z[countx, county] = float(splitting[1])
+                    if differenceSpectra == True and county != 0:
+                        Z[countx, county] -= Z[countx, 0]
+                    countx += 1
             except AssertionError:
                 break
         county += 1
@@ -82,7 +83,8 @@ for i in range(fileNumber + 1):
             break
         else:
             raise IOError
-if differenceSpectra == True:  
+
+if differenceSpectra == True:                  # BUG! The first 2 min exists bug?
     Z[:,0] = np.zeros_like(Z[:,0])
 
 if xHighRange == None or xLowRange == None:    # Wavelength/cm^-1
@@ -119,7 +121,7 @@ else:
                     vmax=maxIntensity, vmin=minIntensity)
 
 #plt.tight_layout()
-plt.xlabel("Wavenumber (cm$^-1$)")
+plt.xlabel("Wavenumber (cm$^{-1}$)")
 plt.ylabel("Time (min)")
 
 cb = plt.colorbar()
