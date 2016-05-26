@@ -6,7 +6,7 @@ FT-IR: Time series plotting
 '''
 
 __author__ = "LI Kezhi" 
-__date__ = "$2016-05-16$"
+__date__ = "$2016-05-26$"
 __version__ = "1.2"
 
 import numpy as np
