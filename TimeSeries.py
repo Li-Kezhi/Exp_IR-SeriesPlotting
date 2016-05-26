@@ -7,7 +7,7 @@ FT-IR: Time series plotting
 
 __author__ = "LI Kezhi" 
 __date__ = "$2016-05-16$"
-__version__ = "1.1"
+__version__ = "1.2"
 
 import numpy as np
 import matplotlib.cm as cm
@@ -88,12 +88,12 @@ if differenceSpectra == True:
     Z[:,0] = np.zeros_like(Z[:,0])
 
 if xHighRange == None or xLowRange == None:    # Wavelength/cm^-1
-    y_ = x[len(x):0:-1]
+    y_ = x[len(x)::-1]
 else:
     x_low = int((xLowRange-x[0])/deltax)
     x_high = int((xHighRange-x[0])/deltax)
     y_ = x[x_high:x_low:-1]
-x_ = y[len(y):0:-1]       # Time/min
+x_ = y[len(y)::-1]       # Time/min
 X_, Y_ = np.meshgrid(x_, y_)
 
 ZT = np.transpose(Z)
