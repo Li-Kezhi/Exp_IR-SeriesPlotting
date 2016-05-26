@@ -1,2 +1,2 @@
 # Exp---IR-series-plotting
-Plot time-dependent IR spectra
+Plot temperature-dependent TPD-IR spectra
