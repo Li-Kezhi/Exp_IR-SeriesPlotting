@@ -63,7 +63,7 @@ Z = np.transpose(Z)
 Z = Z[:, 1:]
 
 # Step 3: Generate delta_y
-y = np.zeros_like(Z[:,0])
+y = np.zeros_like(Z[0,:])
 for i in range(len(y)):
     y[i] = i * SAMPLING_TIME
 delta_y = SAMPLING_TIME
