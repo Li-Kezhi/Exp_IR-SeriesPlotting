@@ -1,140 +1,133 @@
 #!/usr/bin/env python
-#coding=utf-8
 
 '''
-HPLC: 3d plotting
+FT-IR: continuous spectra
 '''
 
 __author__ = "LI Kezhi" 
-__date__ = "$2016-07-01$"
-__version__ = "1.2.1"
+__date__ = "$2016-12-29$"
+__version__ = "1.3.1"
 
 import numpy as np
 import matplotlib.cm as cm
-import matplotlib.mlab as mlab
+# import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
+from matplotlib import ticker
 
-###################################################
+import mpltex
 
-# Experiment data
+@mpltex.presentation_decorator
+def plot():
+    ###################################################
 
-position = "E:\\SkyDrive\\Sharing data\\HPLC\\20160622\\20160622\\"
+    # Experiment data
 
-# Plotting parameters
+    position = "./1-CH3OH-ads/"
+    SAMPLING_TIME = 0.521748571428571  # Sampling time for each spectrum
 
-xHighRange, xLowRange = 8, 0           # "None" or a float
-#xHighRange, xLowRange = None, None
-minIntensity, maxIntensity = 0, 0.02  # "None" or a float
-#minIntensity, maxIntensity = None, None
-#color_choice = cm.jet
-#color_choice = cm.RdBu_r
-#color_choice = cm.seismic
-color_choice = cm.hot
+    # Plotting parameters
 
-###################################################
+    differenceSpectra = False                   # If True, the first spectrum will be used as background
+    xHighRange, xLowRange = 1700, 950           # "None" or a float
+    # xHighRange, xLowRange = None, None
+    minIntensity, maxIntensity = 0, 0.025  # "None" or a float
+    # minIntensity, maxIntensity = None, None
+    # color_choice = cm.jet
+    # color_choice = cm.RdBu_r
+    color_choice = cm.seismic
+    # color_choice = cm.hot
+    # color_choice = cm.CMRmap
+    # color_choice = cm.gnuplot2
 
-# x, y grid
+    ###################################################
 
-# Step 1: Obtain wavelength step (y)
-filename = "Benzaldehyde1209.arw"
-count_y, start_y, end_y = 0, None, None
-for file in open(position + filename, 'r'):
-    lines = file.split('\r')
-    for line in lines:
-        if "\"" not in line:
-            splitting = line.expandtabs(1).split()
-            if start_y == None:
-                start_y = float(splitting[1])  # Filter: omit the first comment
-            if end_y == None:
-                end_y = float(splitting[-1])
-            count_y = len(splitting) - 1
-            break
-deltay = (start_y - end_y) / (count_y - 1)
-y = np.arange(end_y, start_y + deltay, deltay)
+    # x, y grid
 
-# Step 2: Generate time step (x)
-count_x, start_x, end_x = 0, None, None
-for file in open(position + filename, 'r'):
-    lines = file.split('\r')
-    start_flag = False
-    for line in lines:
-        if not line == '':
-            splitting = line.expandtabs(1).split()
-            if splitting[0] == '0':
-                start_flag = True
-            if start_flag == True:
-                if start_x == None:
-                    start_x = float(splitting[0])  # Filter: omit the first comment
-                end_x = float(splitting[0])
-                count_x += 1
-deltax = (-start_x + end_x) / (count_x - 1)
-x = np.arange(start_x, end_x + deltax, deltax)
+    # Step 1: Obtain wavenumber step
+    filename = position + "series00120000.spa.csv"
+    data = np.loadtxt(filename, delimiter = ',')
+    x = np.transpose(data[:, 0])
+    delta_x = (x[-1] - x[0]) / (len(x) - 1)
 
-# Step 3: Generate the grid
-X, Y = np.meshgrid(x, y)
-Z = np.zeros([len(x), len(y)])
+    Z = np.zeros_like(data[:, 1])  # Initialize Z
 
-a = Z.shape
+    # Step 2: Read data
+    county = 0
+    prefix = 'series0012'
 
-county = 0
 
-# Step 4: Data import
-for file in open(position + filename, 'r'):
-    lines = file.split('\r')
-    start_flag = False
-    countx = 0
-    for line in lines:
+    while True:
         try:
-            if not line == '':
-                splitting = line.expandtabs(1).split()
-                if splitting[0] == '0':
-                    start_flag = True
-                if start_flag == True:
-                    Z[countx, :] = splitting[1:]
-
-            countx += 1
-        except IndexError:                   # Unknown index error
+            suffix = "%04d.spa.csv" % county
+            filename = position + prefix + suffix
+            data = np.loadtxt(filename, delimiter=',')
+            y = data[:, 1]
+            Z = np.vstack((Z, y))        
+            county += 1
+            print ('Manipulating' + filename)
+        except IOError:
             break
+    Z = np.transpose(Z)
+    Z = Z[:, 1:]
+
+    # Step 3: Generate delta_y
+    y = np.zeros_like(Z[0,:])
+    for i in range(len(y)):
+        y[i] = i * SAMPLING_TIME
+    delta_y = SAMPLING_TIME
+
+    # Step 4: Generate the grid
+    X, Y = np.meshgrid(x, y)
+
+    if differenceSpectra == True:
+        Z0 = Z[:,0].copy()
+        for i in range(np.shape(Z)[1]):
+            Z[:,i] -= Z0
+        # Z[:,0] = np.zeros_like(Z[:,0])
 
 
-if xHighRange == None or xLowRange == None:    # Wavelength/cm^-1
-    y_ = x[len(x)::-1]
-else:
-    x_low = int((xLowRange-x[0])/deltax)
-    x_high = int((xHighRange-x[0])/deltax)
-    y_ = x[x_high:x_low:-1]
-x_ = y       # Time/min  BUG
-X_, Y_ = np.meshgrid(x_, y_)
+    if xHighRange == None or xLowRange == None:    # Wavelength/cm^-1
+        y_ = x
+    else:
+        x_low = int((xLowRange-x[0])/delta_x)
+        x_high = int((xHighRange-x[0])/delta_x)
+        y_ = x[x_high:x_low]
+    x_ = y[len(y)::-1]       # Time/min
+    X_, Y_ = np.meshgrid(x_, y_)
 
-ZT = np.transpose(Z)
-ZT = np.fliplr(ZT)   # Left-right flip
-if xHighRange == None or xLowRange == None:
-    Z_ = ZT
-else:
-    Z_ = ZT[:, len(x)-x_high:len(x)-x_low]
-Z_ = np.fliplr(Z_)   # Left-right flip
-Z_ = np.flipud(Z_)   # Up-down flip
+    ZT = np.transpose(Z)
+    if xHighRange == None or xLowRange == None:
+        Z_ = ZT
+    else:
+        Z_ = ZT[:, x_high:x_low]
+    Z_ = np.flipud(Z_)   # Up-down flip
 
-if maxIntensity == None or minIntensity == None:
-    im = plt.imshow(Z_, 
-                    interpolation='bilinear', 
-                    cmap=color_choice,
-                    aspect="auto",
-                    extent=[y_[-1], y_[0], x_[-1], x_[0]],
-                    vmax=Z_.max(), vmin=Z_.min())
-else:
-    im = plt.imshow(Z_, 
-                    interpolation='bilinear', 
-                    cmap=color_choice,
-                    aspect="auto",
-                    extent=[y_[-1], y_[0], x_[-1], x_[0]],
-                    vmax=maxIntensity, vmin=minIntensity)
+    if maxIntensity == None or minIntensity == None:
+        im = plt.imshow(Z_, 
+                        interpolation='bilinear', 
+                        cmap=color_choice,
+                        aspect="auto",
+                        extent=[y_[0], y_[-1], x_[-1], x_[0]],
+                        vmax=Z_.max(), vmin=Z_.min())
+    else:
+        im = plt.imshow(Z_, 
+                        interpolation='bilinear', 
+                        cmap=color_choice,
+                        aspect="auto",
+                        extent=[y_[0], y_[-1], x_[-1], x_[0]],
+                        vmax=maxIntensity, vmin=minIntensity)
 
-#plt.tight_layout()
-plt.xlabel("Time (min)")
-plt.ylabel("Wavelength (nm)")
+    #plt.tight_layout()
+    plt.xlabel("Wavenumber (cm$^{-1}$)")
+    plt.ylabel("Time (min)")
 
-cb = plt.colorbar()
-#cb.set_label('Kubelka-Munk')
+    cb = plt.colorbar()
+    cb.set_label(r'Kubelka-Munk ($\times$0.025)')
+    formatter = ticker.ScalarFormatter(useMathText=True) 
+    formatter.set_scientific(True) 
+    formatter.set_powerlimits((-1,1)) 
+    cb.ax.yaxis.set_major_formatter(formatter)
 
-plt.show()
+    plt.show()
+
+plot()

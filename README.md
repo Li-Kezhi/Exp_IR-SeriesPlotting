@@ -1,2 +1,6 @@
-# Exp---HPLC 3D-plotting
-Plot HPLC wavelength-time 3D graph
+# Exp---IR-series-plotting
+Plot time-dependent IR spectra
+
+## Dependencies
+- mpltex package (Plotting)
+- numpy, scipy, matplotlib packages
