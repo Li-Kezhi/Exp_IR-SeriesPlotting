@@ -2,24 +2,25 @@
 
 '''
 FT-IR: continuous spectra
+Plotting 3D FT-IR spectra and integrate peaks of interests
+Note: Integration program is based on Integration.py (v.1.0) written by me
 '''
 
 __author__ = "LI Kezhi" 
-__date__ = "$2016-12-29$"
-__version__ = "1.3.1"
+__date__ = "$2017.01.05$"
+__version__ = "1.4.0"
 
 import numpy as np
 import matplotlib.cm as cm
-# import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 from matplotlib import ticker
 
+from lmfit.models import PolynomialModel
 import mpltex
+
 
 @mpltex.presentation_decorator
 def plot():
-    ###################################################
-
     # Experiment data
 
     position = "./1-CH3OH-ads/"
@@ -39,6 +40,77 @@ def plot():
     # color_choice = cm.CMRmap
     # color_choice = cm.gnuplot2
 
+    # Options
+
+    # Integration
+    intZones = [              # Integration zones
+        (1759, 1500), # COO-
+        (1120, 950), # C-O
+        (3030, 2870), # C-H
+        (2385, 2350) # CO2
+    ]
+    intLabels = [
+        r'COO$^-$',
+        'C-O',
+        'C-H',
+        r'CO$_2$'
+    ]
+    ########## Integration ##########
+    def intCurve(x, y, intZone):
+        '''
+        Integrate the area in a given zone.
+        Input: 
+            x, y - arrays, original data
+            intZones - tuple, eg. (3000, 2700)
+        '''
+        startInt = intZone[0]   # Head x point; integration range
+        endInt = intZone[1]
+
+        ##### Background #####
+        startLine, endLine = None, None
+        for i in xrange(np.size(x)):
+            if x[i] <= startInt and startLine == None:
+                startLine = i
+            if startLine != None and x[i] <= endInt:
+                endLine = i
+                break
+        x_bg = [x[startLine], x[endLine]]
+        y_bg = [y[startLine], y[endLine]]
+
+        bg_mod = PolynomialModel(1, prefix='bg_')   # Background
+        pars = bg_mod.guess(y_bg, x=x_bg)
+
+        mod = bg_mod     
+
+        init = mod.eval(pars, x=x_bg)
+        out = mod.fit(y_bg, pars, x=x_bg)
+
+        ##### Integration #####
+        # Background subtraction
+        comp = out.eval_components(x=x)   
+        out_param = out.params
+        y_bg_fit = bg_mod.eval(params = out_param, x = x)
+        y_bg_remove = y - y_bg_fit
+
+        x_int = x[startLine:endLine]
+        y_int = y_bg_remove[startLine:endLine]
+        y_bg_fit_ = y_bg_fit[startLine:endLine]
+        y_orig = y[startLine:endLine]
+
+        integration = -np.trapz(y_int, x_int)
+
+        # print(str(integration[i]))
+
+        # # Plotting
+        # if county == 50:
+        #     plt.plot(x, y, 'b.')
+        #     plt.plot(x_bg, out.best_fit, 'r-')    # Background plotting
+        #     plt.xlim([x[0], x[-1]])
+        #     plt.fill_between(x_int, y_orig, y_bg_fit_, facecolor='green')
+        #     plt.show()
+
+        return integration
+
     ###################################################
 
     # x, y grid
@@ -55,6 +127,9 @@ def plot():
     county = 0
     prefix = 'series0012'
 
+    integration = []  # Initialization of integration
+    for i in xrange(len(intZones)):
+        integration.append([])
 
     while True:
         try:
@@ -64,7 +139,12 @@ def plot():
             y = data[:, 1]
             Z = np.vstack((Z, y))        
             county += 1
-            print ('Manipulating' + filename)
+            print ('Manipulating ' + filename)
+
+            # Integrate
+            for i, zone in enumerate(intZones):
+                integration[i].append(intCurve(x, y, zone))
+
         except IOError:
             break
     Z = np.transpose(Z)
@@ -129,5 +209,34 @@ def plot():
     cb.ax.yaxis.set_major_formatter(formatter)
 
     plt.show()
+
+    # Integration plotting
+    fig, ax = plt.subplots()
+    for i, singleSpecies in enumerate(integration):
+        ax.plot(y, singleSpecies, label=intLabels[i])
+    
+    ax.set_xlim(0, 90)
+
+    ax.set_yticks([])
+    # ax.tick_params(axis='x', top='off', bottom='off')
+
+    ax.legend(loc='best')
+    ax.set_xlabel('Time (min)')
+    ax.set_ylabel('Integration Area (A. U.)')
+
+    plt.show()
+
+    ##### Text output #####
+    result_txt = position + 'integration.txt'
+    headLine = 'Time(min)'
+    for i in xrange(len(integration)):
+        headLine += '   '
+        headLine += str(intLabels[i])
+    integration = np.fastCopyAndTranspose(integration)
+    y = np.array(y, ndmin=2)
+    y = np.transpose(y)
+    integration = np.hstack((y, integration))
+
+    np.savetxt(result_txt, integration, fmt='%.3e', header=headLine)
 
 plot()
