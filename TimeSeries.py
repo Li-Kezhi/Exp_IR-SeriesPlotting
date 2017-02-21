@@ -6,7 +6,7 @@ Plotting 3D FT-IR spectra and integrate peaks of interests
 Note: Integration program is based on Integration.py (v.1.0) written by me
 '''
 
-__author__ = "LI Kezhi" 
+__author__ = "LI Kezhi"
 __date__ = "$2017.01.05$"
 __version__ = "1.4.0"
 
@@ -28,8 +28,8 @@ def plot():
 
     # Plotting parameters
 
-    differenceSpectra = False                   # If True, the first spectrum will be used as background
-    xHighRange, xLowRange = 1700, 950           # "None" or a float
+    differenceSpectra = False  # If True, the first spectrum will be used as background
+    xHighRange, xLowRange = 1700, 950  # "None" or a float
     # xHighRange, xLowRange = None, None
     minIntensity, maxIntensity = 0, 0.025  # "None" or a float
     # minIntensity, maxIntensity = None, None
@@ -59,7 +59,7 @@ def plot():
     def intCurve(x, y, intZone):
         '''
         Integrate the area in a given zone.
-        Input: 
+        Input:
             x, y - arrays, original data
             intZones - tuple, eg. (3000, 2700)
         '''
@@ -69,7 +69,7 @@ def plot():
         ##### Background #####
         startLine, endLine = None, None
         for i in xrange(np.size(x)):
-            if x[i] <= startInt and startLine == None:
+            if x[i] <= startInt and startLine is None:
                 startLine = i
             if startLine != None and x[i] <= endInt:
                 endLine = i
@@ -80,16 +80,16 @@ def plot():
         bg_mod = PolynomialModel(1, prefix='bg_')   # Background
         pars = bg_mod.guess(y_bg, x=x_bg)
 
-        mod = bg_mod     
+        mod = bg_mod
 
         init = mod.eval(pars, x=x_bg)
         out = mod.fit(y_bg, pars, x=x_bg)
 
         ##### Integration #####
         # Background subtraction
-        comp = out.eval_components(x=x)   
+        comp = out.eval_components(x=x)
         out_param = out.params
-        y_bg_fit = bg_mod.eval(params = out_param, x = x)
+        y_bg_fit = bg_mod.eval(params=out_param, x=x)
         y_bg_remove = y - y_bg_fit
 
         x_int = x[startLine:endLine]
@@ -117,7 +117,7 @@ def plot():
 
     # Step 1: Obtain wavenumber step
     filename = position + "series00120000.spa.csv"
-    data = np.loadtxt(filename, delimiter = ',')
+    data = np.loadtxt(filename, delimiter=',')
     x = np.transpose(data[:, 0])
     delta_x = (x[-1] - x[0]) / (len(x) - 1)
 
@@ -137,7 +137,7 @@ def plot():
             filename = position + prefix + suffix
             data = np.loadtxt(filename, delimiter=',')
             y = data[:, 1]
-            Z = np.vstack((Z, y))        
+            Z = np.vstack((Z, y))
             county += 1
             print ('Manipulating ' + filename)
 
@@ -159,14 +159,14 @@ def plot():
     # Step 4: Generate the grid
     X, Y = np.meshgrid(x, y)
 
-    if differenceSpectra == True:
-        Z0 = Z[:,0].copy()
+    if differenceSpectra is True:
+        Z0 = Z[:, 0].copy()
         for i in range(np.shape(Z)[1]):
-            Z[:,i] -= Z0
-        # Z[:,0] = np.zeros_like(Z[:,0])
+            Z[:, i] -= Z0
+        # Z[:, 0] = np.zeros_like(Z[:,0])
 
 
-    if xHighRange == None or xLowRange == None:    # Wavelength/cm^-1
+    if xHighRange is None or xLowRange is None:    # Wavelength/cm^-1
         y_ = x
     else:
         x_low = int((xLowRange-x[0])/delta_x)
@@ -176,22 +176,22 @@ def plot():
     X_, Y_ = np.meshgrid(x_, y_)
 
     ZT = np.transpose(Z)
-    if xHighRange == None or xLowRange == None:
+    if xHighRange is None or xLowRange is None:
         Z_ = ZT
     else:
         Z_ = ZT[:, x_high:x_low]
     Z_ = np.flipud(Z_)   # Up-down flip
 
-    if maxIntensity == None or minIntensity == None:
-        im = plt.imshow(Z_, 
-                        interpolation='bilinear', 
+    if maxIntensity is None or minIntensity is None:
+        im = plt.imshow(Z_,
+                        interpolation='bilinear',
                         cmap=color_choice,
                         aspect="auto",
                         extent=[y_[0], y_[-1], x_[-1], x_[0]],
                         vmax=Z_.max(), vmin=Z_.min())
     else:
-        im = plt.imshow(Z_, 
-                        interpolation='bilinear', 
+        im = plt.imshow(Z_,
+                        interpolation='bilinear',
                         cmap=color_choice,
                         aspect="auto",
                         extent=[y_[0], y_[-1], x_[-1], x_[0]],
@@ -203,9 +203,9 @@ def plot():
 
     cb = plt.colorbar()
     cb.set_label(r'Kubelka-Munk ($\times$0.025)')
-    formatter = ticker.ScalarFormatter(useMathText=True) 
-    formatter.set_scientific(True) 
-    formatter.set_powerlimits((-1,1)) 
+    formatter = ticker.ScalarFormatter(useMathText=True)
+    formatter.set_scientific(True)
+    formatter.set_powerlimits((-1,1))
     cb.ax.yaxis.set_major_formatter(formatter)
 
     plt.show()
@@ -231,7 +231,7 @@ def plot():
     headLine = 'Time(min)'
     for i in xrange(len(integration)):
         headLine += '   '
-        headLine += str(intLabels[i])
+        headLine += repr(intLabels[i])
     integration = np.fastCopyAndTranspose(integration)
     y = np.array(y, ndmin=2)
     y = np.transpose(y)
