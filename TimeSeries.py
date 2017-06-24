@@ -10,7 +10,7 @@ from __future__ import print_function
 
 __author__ = "LI Kezhi"
 __date__ = "$2017-06-24$"
-__version__ = "2.0.1"
+__version__ = "2.0.2"
 
 import numpy as np
 import matplotlib.cm as cm
@@ -23,6 +23,7 @@ import mpltex
 ##### Parameters #####
 initParams = {}
 plotParams = {}
+FourierAnalysisParams = {}
 
 # Files loading
 initParams['POSITION'] = '../1-NH3-ads-80/'  # Location of the files
@@ -50,6 +51,10 @@ plotParams['DIFFRENCE_SPECTRA'] = False  # If True, the first spectrum will be u
 plotParams['INTENSITY_RANGE'] = (0, 0.0005)  # High and low range of intensity; THIS LINE CAN BE CANCELLED!
 plotParams['COLOR'] = cm.seismic  # eg. cm.jet, cm.RdBu_r, cm.seismic, cm.hot, cm.CMRmap, cm.gnuplot2
 
+# Fourier analysis parameters
+# FourierAnalysisParams['X_RANGE'] = (1700, 950)  # High and low range of x; THIS LINE CAN BE CANCELLED!
+# FourierAnalysisParams['TIME_RANGE'] = (0, 6)  # Analysis time range; THIS LINE CAN BE CANCELLED!
+FourierAnalysisParams['IF_PLOT_PHASE_ANGLE'] = True
 ##### End of Parameters #####
 
 
@@ -165,20 +170,61 @@ class Series(object):
         return integration
 
     @mpltex.presentation_decorator
+    def FourierTransformPlot(self, repeatCycle=1, **kwargs):
+        '''
+        Fourier transform of the original time-related matrix
+        Input:
+            repeatCycle: 1 for non-periodic (default), and > 1 for the repeat cycles
+            kwargs:
+                X_RANGE: plotting range, default - (4000, 700)
+        Output:
+            TXT report and plotting
+        '''
+        X_RANGE = kwargs.get('X_RANGE', (4000, 700))
+        TIME_RANGE = kwargs.get('TIME_RANGE', (self.y[0], self.y[-1]))
+        delta_y = self.y[1] - self.y[0]
+        timeIndex = (int(TIME_RANGE[0]/delta_y), int(TIME_RANGE[1]/delta_y))
+        Z_fft = np.fft.rfft(self.Z[:, timeIndex[0]:timeIndex[1]]) / self.Z.shape[1]
+        wavenumber = self.x
+        amplitude = np.abs(Z_fft[:, repeatCycle])
+        phaseAngle = np.angle(Z_fft[:, repeatCycle])
+        # Plot
+        if kwargs['IF_PLOT_PHASE_ANGLE'] == True:
+            fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
+            axes[0].plot(self.x, amplitude)
+            axes[1].plot(self.x, phaseAngle)
+            axes[0].set_xlabel(r'Wavenumber (cm$^{-1}$)')
+            axes[0].set_ylabel('Amplitude - KM')
+            axes[1].set_xlabel(r'Wavenumber (cm$^{-1}$)')
+            axes[1].set_ylabel('Phase')
+            axes[1].set_xlim(X_RANGE[0], X_RANGE[1])
+        else:
+            fig, axes = plt.subplots(nrows=1, ncols=1, sharex=True)
+            axes.plot(self.x, amplitude)
+            axes.set_xlabel(r'Wavenumber (cm$^{-1}$)')
+            axes.set_ylabel('Amplitude - KM')
+        plt.show()
+        # Write data
+        result_txt = self.position + 'FourierTransform.txt'
+        if kwargs['IF_PLOT_PHASE_ANGLE'] == True:
+            headLine = 'Wavenumber(cm-1)   Amplitude   PhaseAngle'
+            result = np.transpose(np.vstack((wavenumber, amplitude, phaseAngle)))
+        else:
+            headLine = 'Wavenumber(cm-1)   Amplitude'
+            result = np.transpose(np.vstack((wavenumber, amplitude)))
+        np.savetxt(result_txt, result, fmt='%.3e', header=headLine)
+
+    @mpltex.presentation_decorator
     def generalPlot(self, **kwargs):
         '''
         Plot figures
         Input: plotting paramaters - kwargs
         '''
-
         # Plotting parameters
         differenceSpectra = kwargs['DIFFRENCE_SPECTRA']
         xHighRange, xLowRange = kwargs.get('X_RANGE', (None, None))
         minIntensity, maxIntensity = kwargs.get('INTENSITY_RANGE', (None, None))
         color_choice = kwargs.get('COLOR', cm.seismic)
-
-
-        ###################################################
 
         # Generate the grid
         if differenceSpectra is True:
@@ -272,3 +318,5 @@ class Series(object):
 if __name__ == '__main__':
     testData = Series(**initParams)
     testData.generalPlot(**plotParams)
+    testData.FourierTransformPlot(**FourierAnalysisParams)
+    
