@@ -9,8 +9,8 @@ Note: Integration program is based on Integration.py (v.1.0) written by me
 from __future__ import print_function
 
 __author__ = "LI Kezhi"
-__date__ = "$2017-06-24$"
-__version__ = "2.0.2"
+__date__ = "$2017-06-26$"
+__version__ = "2.0.3"
 
 import numpy as np
 import matplotlib.cm as cm
@@ -26,13 +26,13 @@ plotParams = {}
 FourierAnalysisParams = {}
 
 # Files loading
-initParams['POSITION'] = '../1-NH3-ads-80/'  # Location of the files
+initParams['POSITION'] = '../4-VOacac2-1min/'  # Location of the files
 initParams['SAMPLING_TIME'] = 0.03344952593  # Sampling time for each spectrum
-initParams['PREFIX'] = 'series0001'  # eg. series00010000.csv
+initParams['PREFIX'] = 'series0014'  # eg. series00010000.csv
 
 # Integration
-initParams['IF_INTEGRATE'] = True  # Whether to integrate peaks of selection
-initParams['INT_ZONES'] = [ 
+initParams['IF_INTEGRATE'] = False  # Whether to integrate peaks of selection
+initParams['INT_ZONES'] = [
     (1759, 1500), # COO-
     (1120, 950), # C-O
     (3030, 2870), # C-H
@@ -48,12 +48,13 @@ initParams['INT_LABELS'] = [
 # Plotting
 plotParams['DIFFRENCE_SPECTRA'] = False  # If True, the first spectrum will be used as background
 # params['X_RANGE'] = (1700, 950)  # High and low range of x; THIS LINE CAN BE CANCELLED!
-plotParams['INTENSITY_RANGE'] = (0, 0.0005)  # High and low range of intensity; THIS LINE CAN BE CANCELLED!
+# plotParams['INTENSITY_RANGE'] = (0, 0.0005)  # High and low range of intensity; THIS LINE CAN BE CANCELLED!
 plotParams['COLOR'] = cm.seismic  # eg. cm.jet, cm.RdBu_r, cm.seismic, cm.hot, cm.CMRmap, cm.gnuplot2
 
 # Fourier analysis parameters
 # FourierAnalysisParams['X_RANGE'] = (1700, 950)  # High and low range of x; THIS LINE CAN BE CANCELLED!
-# FourierAnalysisParams['TIME_RANGE'] = (0, 6)  # Analysis time range; THIS LINE CAN BE CANCELLED!
+FourierAnalysisParams['TIME_RANGE'] = (85, 105)  # Analysis time range; THIS LINE CAN BE CANCELLED!
+FourierAnalysisParams['REPEAT_CYCLE'] = 10  # Repeat cycles; THIS LINE CAN BE CANCELLED!
 FourierAnalysisParams['IF_PLOT_PHASE_ANGLE'] = True
 ##### End of Parameters #####
 
@@ -98,6 +99,8 @@ class Series(object):
             for i in xrange(len(intZones)):
                 self.integration.append([])
             self.intLabels = kwargs['INT_LABELS']
+        else:
+            self.ifIntegrate = False
 
         while True:
             try:
@@ -170,7 +173,7 @@ class Series(object):
         return integration
 
     @mpltex.presentation_decorator
-    def FourierTransformPlot(self, repeatCycle=1, **kwargs):
+    def FourierTransformPlot(self, **kwargs):
         '''
         Fourier transform of the original time-related matrix
         Input:
@@ -180,6 +183,7 @@ class Series(object):
         Output:
             TXT report and plotting
         '''
+        repeatCycle = kwargs.get('REPEAT_CYCLE', 1)
         X_RANGE = kwargs.get('X_RANGE', (4000, 700))
         TIME_RANGE = kwargs.get('TIME_RANGE', (self.y[0], self.y[-1]))
         delta_y = self.y[1] - self.y[0]
@@ -188,6 +192,7 @@ class Series(object):
         wavenumber = self.x
         amplitude = np.abs(Z_fft[:, repeatCycle])
         phaseAngle = np.angle(Z_fft[:, repeatCycle])
+        zeroAmplitude = np.abs(Z_fft[:, 0])
         # Plot
         if kwargs['IF_PLOT_PHASE_ANGLE'] == True:
             fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
@@ -207,11 +212,11 @@ class Series(object):
         # Write data
         result_txt = self.position + 'FourierTransform.txt'
         if kwargs['IF_PLOT_PHASE_ANGLE'] == True:
-            headLine = 'Wavenumber(cm-1)   Amplitude   PhaseAngle'
-            result = np.transpose(np.vstack((wavenumber, amplitude, phaseAngle)))
+            headLine = 'Wavenumber(cm-1)   Background   Amplitude   PhaseAngle'
+            result = np.transpose(np.vstack((wavenumber, zeroAmplitude, amplitude, phaseAngle)))
         else:
-            headLine = 'Wavenumber(cm-1)   Amplitude'
-            result = np.transpose(np.vstack((wavenumber, amplitude)))
+            headLine = 'Wavenumber(cm-1)   Background   Amplitude'
+            result = np.transpose(np.vstack((wavenumber, zeroAmplitude, amplitude)))
         np.savetxt(result_txt, result, fmt='%.3e', header=headLine)
 
     @mpltex.presentation_decorator
