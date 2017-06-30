@@ -9,8 +9,8 @@ Note: Integration program is based on Integration.py (v.1.0) written by me
 from __future__ import print_function
 
 __author__ = "LI Kezhi"
-__date__ = "$2017-06-26$"
-__version__ = "2.0.3"
+__date__ = "$2017-06-30$"
+__version__ = "2.0.4"
 
 import numpy as np
 import matplotlib.cm as cm
@@ -193,6 +193,15 @@ class Series(object):
         amplitude = np.abs(Z_fft[:, repeatCycle])
         phaseAngle = np.angle(Z_fft[:, repeatCycle])
         zeroAmplitude = np.abs(Z_fft[:, 0])
+        # Write data
+        result_txt = self.position + 'FourierTransform.txt'
+        if kwargs['IF_PLOT_PHASE_ANGLE'] == True:
+            headLine = 'Wavenumber(cm-1)   Background   Amplitude   PhaseAngle'
+            result = np.transpose(np.vstack((wavenumber, zeroAmplitude, amplitude, phaseAngle)))
+        else:
+            headLine = 'Wavenumber(cm-1)   Background   Amplitude'
+            result = np.transpose(np.vstack((wavenumber, zeroAmplitude, amplitude)))
+        np.savetxt(result_txt, result, fmt='%.3e', header=headLine)
         # Plot
         if kwargs['IF_PLOT_PHASE_ANGLE'] == True:
             fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
@@ -209,15 +218,6 @@ class Series(object):
             axes.set_xlabel(r'Wavenumber (cm$^{-1}$)')
             axes.set_ylabel('Amplitude - KM')
         plt.show()
-        # Write data
-        result_txt = self.position + 'FourierTransform.txt'
-        if kwargs['IF_PLOT_PHASE_ANGLE'] == True:
-            headLine = 'Wavenumber(cm-1)   Background   Amplitude   PhaseAngle'
-            result = np.transpose(np.vstack((wavenumber, zeroAmplitude, amplitude, phaseAngle)))
-        else:
-            headLine = 'Wavenumber(cm-1)   Background   Amplitude'
-            result = np.transpose(np.vstack((wavenumber, zeroAmplitude, amplitude)))
-        np.savetxt(result_txt, result, fmt='%.3e', header=headLine)
 
     @mpltex.presentation_decorator
     def generalPlot(self, **kwargs):
@@ -254,6 +254,21 @@ class Series(object):
             Z_ = ZT[:, x_high:x_low]
         Z_ = np.flipud(Z_)   # Up-down flip
 
+        ##### Text output #####
+        if self.ifIntegrate is True:
+            result_txt = self.position + 'integration.txt'
+            headLine = 'Time(min)'
+            for i in xrange(len(integration)):
+                headLine += '   '
+                headLine += repr(self.intLabels[i])
+            integration = np.fastCopyAndTranspose(integration)
+            self.y = np.array(self.y, ndmin=2)
+            self.y = np.transpose(self.y)
+            integration = np.hstack((self.y, integration))
+
+            np.savetxt(result_txt, integration, fmt='%.3e', header=headLine)
+
+        ##### Figures output #####
         # Plot
         if maxIntensity is None or minIntensity is None:
             im = plt.imshow(
@@ -304,20 +319,6 @@ class Series(object):
             ax.set_ylabel('Integration Area (A. U.)')
 
             plt.show()
-
-        ##### Text output #####
-        if self.ifIntegrate is True:
-            result_txt = self.position + 'integration.txt'
-            headLine = 'Time(min)'
-            for i in xrange(len(integration)):
-                headLine += '   '
-                headLine += repr(self.intLabels[i])
-            integration = np.fastCopyAndTranspose(integration)
-            self.y = np.array(self.y, ndmin=2)
-            self.y = np.transpose(self.y)
-            integration = np.hstack((self.y, integration))
-
-            np.savetxt(result_txt, integration, fmt='%.3e', header=headLine)
 
 
 if __name__ == '__main__':
