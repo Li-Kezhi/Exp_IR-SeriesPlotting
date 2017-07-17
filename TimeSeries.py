@@ -9,8 +9,8 @@ Note: Integration program is based on Integration.py (v.1.0) written by me
 from __future__ import print_function
 
 __author__ = "LI Kezhi"
-__date__ = "$2017-06-30$"
-__version__ = "2.0.4"
+__date__ = "$2017-07-17$"
+__version__ = "2.0.5"
 
 import numpy as np
 import matplotlib.cm as cm
