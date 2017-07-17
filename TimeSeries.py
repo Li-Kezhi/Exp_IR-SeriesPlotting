@@ -31,7 +31,7 @@ initParams['SAMPLING_TIME'] = 0.03344952593  # Sampling time for each spectrum
 initParams['PREFIX'] = 'series0014'  # eg. series00010000.csv
 
 # Integration
-initParams['IF_INTEGRATE'] = False  # Whether to integrate peaks of selection
+initParams['IF_INTEGRATE'] = True  # Whether to integrate peaks of selection
 initParams['INT_ZONES'] = [
     (1759, 1500), # COO-
     (1120, 950), # C-O
@@ -256,6 +256,7 @@ class Series(object):
 
         ##### Text output #####
         if self.ifIntegrate is True:
+            integration = self.integration
             result_txt = self.position + 'integration.txt'
             headLine = 'Time(min)'
             for i in xrange(len(integration)):
@@ -304,10 +305,11 @@ class Series(object):
 
         # Integration plotting
         if self.ifIntegrate is True:
-            integration = self.integration
             fig, ax = plt.subplots()
-            for i, singleSpecies in enumerate(integration):
-                ax.plot(self.y, singleSpecies, label=self.intLabels[i])
+            for i, singleSpecies in enumerate(np.transpose(integration)):
+                if i == 0:
+                    continue
+                ax.plot(self.y, singleSpecies, label=self.intLabels[i - 1])
 
             # ax.set_xlim(0, 90)
 
